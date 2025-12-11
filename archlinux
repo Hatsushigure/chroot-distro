@@ -1,0 +1,48 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+# Variants
+ARCH_PATH="/data/local/tmp/archrootfs"
+
+# Grant root
+if [ "$(id -u)" != "0" ]; then
+    sudo "$0"
+    exit
+fi
+
+# Mount
+if ! mountpoint -q "$ARCH_PATH"; then
+    mount --bind "$ARCH_PATH" "$ARCH_PATH"
+fi
+mount -o remount,suid,dev,exec "$ARCH_PATH"
+mount -t proc proc "$ARCH_PATH/proc"
+mount -t sysfs sysfs "$ARCH_PATH/sys"
+mount -t tmpfs tmpfs "$ARCH_PATH/tmp"
+mount --bind /dev "$ARCH_PATH/dev"
+mount --bind /dev/pts "$ARCH_PATH/dev/pts"
+if [ ! -d "$ARCH_PATH/dev/shm" ]; then
+    mkdir -p "$ARCH_PATH/dev/shm"
+fi
+mount -t tmpfs -o size=256M tmpfs "$ARCH_PATH/dev/shm"
+
+# Fix DNS
+RESOLV_CONF="$ARCH_PATH/etc/resolv.conf"
+if [ -L "$RESOLV_CONF" ]; then
+    rm "$RESOLV_CONF"
+fi
+echo "nameserver 114.114.114.114" > "$RESOLV_CONF"
+echo "nameserver 8.8.8.8" >> "$RESOLV_CONF"
+
+# Enter chroot
+unset LD_PRELOAD
+chroot "$ARCH_PATH" /usr/bin/env -i \
+	TERM="$TERM" \
+	su - shigure
+
+# Exit
+umount -l "$ARCH_PATH/dev/shm"
+umount -l "$ARCH_PATH/dev/pts"
+umount -l "$ARCH_PATH/dev"
+umount -l "$ARCH_PATH/proc"
+umount -l "$ARCH_PATH/sys"
+umount -l "$ARCH_PATH/tmp"
+umount -l "$ARCH_PATH"
