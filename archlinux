@@ -1,31 +1,32 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
 # Variants
-ARCH_PATH="/data/local/tmp/archrootfs"
+IMAGE_PATH="/data/data/com.termux/files/home/archlinux.img"
+MOUNT_PATH="/data/local/tmp/archlinux"
 
 # Grant root
 if [ "$(id -u)" != "0" ]; then
-    sudo "$0"
+    su -c "$0"
     exit
 fi
 
+# Create mount dir
+mkdir -p "$MOUNT_PATH"
+
 # Mount
-if ! mountpoint -q "$ARCH_PATH"; then
-    mount --bind "$ARCH_PATH" "$ARCH_PATH"
+mount -t ext4 -o loop,rw,suid,dev,exec "$IMAGE_PATH" "$MOUNT_PATH"
+mount -t proc proc "$MOUNT_PATH/proc"
+mount -t sysfs sysfs "$MOUNT_PATH/sys"
+mount -t tmpfs tmpfs "$MOUNT_PATH/tmp"
+mount --bind /dev "$MOUNT_PATH/dev"
+mount --bind /dev/pts "$MOUNT_PATH/dev/pts"
+if [ ! -d "$MOUNT_PATH/dev/shm" ]; then
+    mkdir -p "$MOUNT_PATH/dev/shm"
 fi
-mount -o remount,suid,dev,exec "$ARCH_PATH"
-mount -t proc proc "$ARCH_PATH/proc"
-mount -t sysfs sysfs "$ARCH_PATH/sys"
-mount -t tmpfs tmpfs "$ARCH_PATH/tmp"
-mount --bind /dev "$ARCH_PATH/dev"
-mount --bind /dev/pts "$ARCH_PATH/dev/pts"
-if [ ! -d "$ARCH_PATH/dev/shm" ]; then
-    mkdir -p "$ARCH_PATH/dev/shm"
-fi
-mount -t tmpfs -o size=256M tmpfs "$ARCH_PATH/dev/shm"
+mount -t tmpfs -o size=256M tmpfs "$MOUNT_PATH/dev/shm"
 
 # Fix DNS
-RESOLV_CONF="$ARCH_PATH/etc/resolv.conf"
+RESOLV_CONF="$MOUNT_PATH/etc/resolv.conf"
 if [ -L "$RESOLV_CONF" ]; then
     rm "$RESOLV_CONF"
 fi
@@ -34,15 +35,15 @@ echo "nameserver 8.8.8.8" >> "$RESOLV_CONF"
 
 # Enter chroot
 unset LD_PRELOAD
-chroot "$ARCH_PATH" /usr/bin/env -i \
+chroot "$MOUNT_PATH" /usr/bin/env -i \
 	TERM="$TERM" \
 	su - shigure
 
 # Exit
-umount -l "$ARCH_PATH/dev/shm"
-umount -l "$ARCH_PATH/dev/pts"
-umount -l "$ARCH_PATH/dev"
-umount -l "$ARCH_PATH/proc"
-umount -l "$ARCH_PATH/sys"
-umount -l "$ARCH_PATH/tmp"
-umount -l "$ARCH_PATH"
+umount -l "$MOUNT_PATH/dev/shm"
+umount -l "$MOUNT_PATH/dev/pts"
+umount -l "$MOUNT_PATH/dev"
+umount -l "$MOUNT_PATH/proc"
+umount -l "$MOUNT_PATH/sys"
+umount -l "$MOUNT_PATH/tmp"
+umount -l "$MOUNT_PATH"
