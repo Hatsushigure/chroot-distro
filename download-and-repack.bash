@@ -14,7 +14,7 @@ target_size_mb="${3:-$DEFAULT_SIZE}"
 # Grant root permission
 if [[ "$(id -u)" -ne "0" ]]; then
     echo 'Granting root permission'
-    su -c ""$(/usr/bin/env which bash)" "$0""
+    su -c ""$(/usr/bin/env which bash)" "$0" "$@""
     exit
 fi
 
@@ -33,9 +33,9 @@ cleanup() {
 trap cleanup EXIT
 
 # Download file
-downloaded_file="$work_dir/rootfs.tar.gz"
+downloaded_file="$work_dir/rootfs-tarball"
 echo "Start downloading from \"$target_url\"..."
-wget -q --show-progress "$target_url" -O "$downloaded_file"
+curl "$target_url" -o "$downloaded_file"
 if [[ ! -f "$downloaded_file" ]]; then
     echo 'Download failed'
     exit 1
