@@ -12,20 +12,13 @@ output_img="${2:-$DEFAULT_OUTPUT}"
 target_size_mb="${3:-$DEFAULT_SIZE}"
 
 # Grant root permission
-if [[ "$(id -u)" -ne "0" ]]; then
-    echo 'Granting root permission'
-    if [[ -v TERMUX_VERSION ]]; then
-        echo 'Running in termux, use su directly'
-        su -c ""$(/usr/bin/env which bash)" "$0" $@"
-    else
-        echo 'Running in normal linux, use sudo'
-        sudo ""$(/usr/bin/env which bash)" "$0" $@"
-    fi
+if [[ $(id -u) -ne 0 ]]; then
+    ./elevator $0 $@
     exit
 fi
 
 # Prepare work dir
-work_dir="$(mktemp -d chroot-distro.XXXXXXXX)"
+work_dir="$(mktemp -d chroot-distro.XXXXXXXX --tmpdir)"
 
 # Cleanup
 cleanup() {
@@ -81,7 +74,7 @@ fi
 echo 'Creating img file'
 dd if=/dev/zero of="$output_img" bs=1M count="$final_size"
 echo 'Formating'
-mkfs.ext4 "$output_img"
+mkfs.ext4 "$output_img" > /dev/null
 
 # Write data
 mount_point="$work_dir/mnt"

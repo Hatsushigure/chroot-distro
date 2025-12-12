@@ -5,8 +5,8 @@ IMAGE_PATH="/data/data/com.termux/files/home/archlinux.img"
 MOUNT_PATH="/data/local/tmp/archlinux"
 
 # Grant root
-if [ "$(id -u)" != "0" ]; then
-    su -c "$0"
+if [ "$(id -u)" -ne 0 ]; then
+    ./elevator $0 $@
     exit
 fi
 

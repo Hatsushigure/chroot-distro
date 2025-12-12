@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+OLD_PATH="$PATH"
+print_usage() {
+    echo 'Elevator'
+    echo 'Usage: elevator <program>    Grant root for program'
+    echo '       elevator --help       Show this message'
+}
+
+# Arg count must be greater than 1
+if [[ $# -lt 1 ]]; then
+    print_usage
+    exit 1
+fi
+
+# --help
+if [[ "$1" == "--help" ]]; then
+    print_usage
+    exit
+fi
+
+if [[ "$(id -u)" -ne "0" ]]; then
+    echo 'Granting root permission'
+    # Termux
+    if [[ -v TERMUX_VERSION ]]; then
+        echo 'Running in termux, use su directly'
+        su -c "PATH='$PATH':$OLD_PATH $*" # Append old path to find bash
+        exit
+    fi
+    echo 'Running in normal linux'
+    # Normal with sudo
+    if command -v sudo > /dev/null; then
+        echo 'The system has sudo. Use sudo'
+        sudo $@
+        exit
+    fi
+    #Normal without sudo
+    echo 'The system does not have sudo. Use su'
+    su -c "$*"
+    exit
+fi
+
+# Already have root
+echo 'Already have root'
+$@
